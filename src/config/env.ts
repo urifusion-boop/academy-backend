@@ -1,0 +1,36 @@
+import { z } from 'zod';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const EnvSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.string().default('3000'),
+  DATABASE_URL: z.string().default('postgresql://user:pass@localhost:5432/db'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  JWT_ACCESS_SECRET: z.string().default('accessdevsecret'),
+  JWT_REFRESH_SECRET: z.string().default('refreshdevsecret'),
+  SMTP_HOST: z.string().default('localhost'),
+  SMTP_PORT: z.string().default('1025'),
+  SMTP_USER: z.string().default('user'),
+  SMTP_PASS: z.string().default('pass'),
+  PAYSTACK_SECRET_KEY: z.string().default('psk'),
+  PAYSTACK_PUBLIC_KEY: z.string().default('ppk'),
+  STRIPE_SECRET: z.string().optional(),
+  STORAGE_BUCKET: z.string().default('bucket'),
+  STORAGE_ENDPOINT: z.string().default('http://localhost:9000'),
+  STORAGE_ACCESS_KEY: z.string().default('key'),
+  STORAGE_SECRET_KEY: z.string().default('secret'),
+  STORAGE_URL_EXPIRY: z.string().default('600'),
+  APP_URL: z.string().default('http://localhost:5174'),
+  API_URL: z.string().default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().optional(),
+  SUPABASE_DB_URL: z.string().optional(),
+});
+
+const parsed = EnvSchema.safeParse(process.env);
+if (!parsed.success) {
+  throw new Error('Invalid environment configuration');
+}
+
+export const env = parsed.data;

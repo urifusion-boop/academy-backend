@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum CohortStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+enum SubmissionStatus {
+  PENDING
+  REVIEWED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  STRIPE
+}
+
+enum ContentType {
+  VIDEO
+  DOC
+  LINK
+}
+
+enum CertificateStatus {
+  GENERATED
+  REVOKED
+}
+
+enum HelpTicketStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role
+  name          String
+  phoneNumber   String?
+  initials      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+  profile       StudentProfile?
+  notifications NotificationPref?
+  auditLogs     AuditLog[]
+  helpTickets   HelpTicket[]
+  passwordResetToken PasswordResetToken?
+}
+
+model StudentProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohortId       String?
+  cohort         Cohort?  @relation(fields: [cohortId], references: [id])
+  progress       Int      @default(0)
+  studentIdCode  String   @unique
+  submissions    Submission[]
+  grades         Grade[]
+  attendanceLogs AttendanceLog[]
+  payments       Payment[]
+  certificates   Certificate[]
+}
+
+model Cohort {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  startDate   DateTime
+  endDate     DateTime
+  status      CohortStatus
+  students    StudentProfile[]
+  sessions    AttendanceSession[]
+  assignments Assignment[]
+  content     ContentAsset[]
+}
+
+model CurriculumItem {
+  id           String  @id @default(uuid())
+  week         Int
+  title        String
+  description  String
+  durationMinutes Int
+  orderIndex   Int
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  dueAt       DateTime
+  maxScore    Int
+  cohortId    String?
+  cohort      Cohort?  @relation(fields: [cohortId], references: [id])
+  submissions Submission[]
+  grades      Grade[]
+}
+
+model Submission {
+  id           String           @id @default(uuid())
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id])
+  studentId    String
+  student      StudentProfile   @relation(fields: [studentId], references: [id])
+  contentURL   String?
+  fileRef      String?
+  status       SubmissionStatus
+  score        Int?
+  feedback     String?
+  notes        String?
+  submittedAt  DateTime         @default(now())
+}
+
+model Grade {
+  id           String     @id @default(uuid())
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id])
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  score        Int
+  gradedAt     DateTime   @default(now())
+  @@unique([studentId, assignmentId])
+}
+
+model AttendanceSession {
+  id        String   @id @default(uuid())
+  date      DateTime
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id])
+  topic     String
+  startTime DateTime
+  endTime   DateTime
+  logs      AttendanceLog[]
+}
+
+model AttendanceLog {
+  id        String           @id @default(uuid())
+  sessionId String
+  session   AttendanceSession @relation(fields: [sessionId], references: [id])
+  studentId String
+  student   StudentProfile   @relation(fields: [studentId], references: [id])
+  status    AttendanceStatus
+  notes     String?
+}
+
+model Payment {
+  id         String          @id @default(uuid())
+  studentId  String
+  student    StudentProfile  @relation(fields: [studentId], references: [id])
+  amount     Int
+  currency   String          @default("NGN")
+  status     PaymentStatus
+  method     PaymentMethod
+  provider   PaymentProvider
+  reference  String          @unique
+  receiptURL String?
+  createdAt  DateTime        @default(now())
+}
+
+model Certificate {
+  id           String          @id @default(uuid())
+  studentId    String
+  student      StudentProfile  @relation(fields: [studentId], references: [id])
+  issuedAt     DateTime
+  serialNumber String          @unique
+  fileURL      String
+  status       CertificateStatus
+}
+
+model ContentAsset {
+  id         String   @id @default(uuid())
+  title      String
+  type       ContentType
+  url        String
+  cohortId   String?
+  cohort     Cohort?  @relation(fields: [cohortId], references: [id])
+  publishedAt DateTime?
+}
+
+model NotificationPref {
+  id               String  @id @default(uuid())
+  userId           String  @unique
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNews        Boolean @default(false)
+  emailAssignments Boolean @default(true)
+  emailGrades      Boolean @default(true)
+}
+
+model HelpTicket {
+  id        String          @id @default(uuid())
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subject   String
+  message   String
+  status    HelpTicketStatus @default(OPEN)
+  createdAt DateTime        @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorUserId  String?
+  actor        User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  action       String
+  entityType   String
+  entityId     String
+  metadata     Json
+  createdAt    DateTime @default(now())
+}
+
+model PasswordResetToken {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+}

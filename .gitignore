@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Production build
+dist
+build
+
+# Environment variables
+.env
+.env.*
+! .env.example
+docker/api.env
+
+# Testing
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Prisma
+*.db
+*.db-journal
+
+# TypeScript
+*.tsbuildinfo
