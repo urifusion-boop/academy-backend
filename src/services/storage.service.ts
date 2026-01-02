@@ -20,6 +20,19 @@ const client = new MinioClient({
   secretKey: env.STORAGE_SECRET_KEY,
 });
 
+// Initialize bucket
+(async () => {
+  try {
+    const exists = await client.bucketExists(env.STORAGE_BUCKET);
+    if (!exists) {
+      await client.makeBucket(env.STORAGE_BUCKET, 'us-east-1');
+      console.log(`Bucket '${env.STORAGE_BUCKET}' created successfully.`);
+    }
+  } catch (err) {
+    console.error('Failed to initialize storage bucket:', err);
+  }
+})();
+
 export async function generateObjectName(fileName: string) {
   const ext = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
   const key = crypto.randomUUID().replace(/-/g, '');
