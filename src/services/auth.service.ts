@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { prisma } from '../lib/prisma';
@@ -13,7 +14,7 @@ export async function registerUser(
   password: string,
   name: string,
   phoneNumber?: string,
-  role: 'STUDENT' | 'ADMIN' = 'STUDENT',
+  role: Role = Role.APPLICANT,
 ) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new ConflictError('Email already taken');
@@ -25,8 +26,8 @@ export async function registerUser(
     data: { userId: user.id, emailNews: false, emailAssignments: true, emailGrades: true },
   });
 
-  if (role === 'STUDENT') {
-    // Generate a simple student ID code
+  if (role === Role.STUDENT || role === Role.APPLICANT) {
+    // Generate a simple student ID code (even for applicants, they get a profile)
     const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
     await prisma.studentProfile.create({
       data: {
@@ -51,7 +52,15 @@ export async function registerUser(
 export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new UnauthorizedError('Invalid credentials');
+
+  // Debug logging
+  console.log('Login attempt for:', email);
+  console.log('Provided password:', password);
+  console.log('Stored hash:', user.passwordHash);
+
   const ok = await bcrypt.compare(password, user.passwordHash);
+  console.log('Bcrypt compare result:', ok);
+
   if (!ok) throw new UnauthorizedError('Invalid credentials');
   const jti = crypto.randomUUID();
   const accessToken = signAccessToken({ sub: user.id, role: user.role });

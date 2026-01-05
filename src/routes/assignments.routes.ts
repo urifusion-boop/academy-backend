@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../auth/middleware';
+import { Role } from '@prisma/client';
 import {
   createAssignment,
   listAssignments,
@@ -16,22 +17,27 @@ import {
 
 const router = Router();
 
-router.post('/', requireAuth, requireRole('ADMIN'), createAssignment);
-router.get('/', requireAuth, listAssignments);
+router.post('/', requireAuth, requireRole(Role.ADMIN), createAssignment);
+router.get('/', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), listAssignments);
 
-router.get('/grades', requireAuth, listGrades);
+router.get('/grades', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), listGrades);
 
-router.get('/submissions', requireAuth, listSubmissions);
-router.get('/submissions/:id', requireAuth, getSubmission);
-router.get('/submissions/:id/file', requireAuth, getSubmissionFile);
+router.get('/submissions', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), listSubmissions);
+router.get('/submissions/:id', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), getSubmission);
+router.get(
+  '/submissions/:id/file',
+  requireAuth,
+  requireRole([Role.STUDENT, Role.ADMIN]),
+  getSubmissionFile,
+);
 
-router.get('/:id', requireAuth, getAssignment);
+router.get('/:id', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), getAssignment);
 
-router.post('/:id/submissions', requireAuth, createSubmission);
+router.post('/:id/submissions', requireAuth, requireRole(Role.STUDENT), createSubmission);
 
-router.patch('/submissions/:id', requireAuth, updateSubmission);
-router.post('/submissions/:id/grade', requireAuth, requireRole('ADMIN'), gradeSubmission);
+router.patch('/submissions/:id', requireAuth, requireRole(Role.STUDENT), updateSubmission);
+router.post('/submissions/:id/grade', requireAuth, requireRole(Role.ADMIN), gradeSubmission);
 
-router.post('/:id/grade', requireAuth, requireRole('ADMIN'), gradeAssignment);
+router.post('/:id/grade', requireAuth, requireRole(Role.ADMIN), gradeAssignment);
 
 export default router;

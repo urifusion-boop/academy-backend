@@ -7,13 +7,14 @@ import {
   updateCohort,
 } from '../controllers/cohorts.controller';
 import { listCohortContent } from '../controllers/content.controller';
+import { Role } from '@prisma/client';
 
 const router = Router();
 
-router.post('/', requireAuth, requireRole('ADMIN'), createCohort);
-router.get('/', requireAuth, listCohorts);
-router.get('/:id', requireAuth, getCohort);
-router.patch('/:id', requireAuth, requireRole('ADMIN'), updateCohort);
-router.get('/:id/content', requireAuth, listCohortContent);
+router.post('/', requireAuth, requireRole(Role.ADMIN), createCohort);
+router.get('/', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), listCohorts);
+router.get('/:id', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), getCohort);
+router.patch('/:id', requireAuth, requireRole(Role.ADMIN), updateCohort);
+router.get('/:id/content', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), listCohortContent);
 
 export default router;
