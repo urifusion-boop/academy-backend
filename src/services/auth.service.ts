@@ -53,13 +53,7 @@ export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new UnauthorizedError('Invalid credentials');
 
-  // Debug logging
-  console.log('Login attempt for:', email);
-  console.log('Provided password:', password);
-  console.log('Stored hash:', user.passwordHash);
-
   const ok = await bcrypt.compare(password, user.passwordHash);
-  console.log('Bcrypt compare result:', ok);
 
   if (!ok) throw new UnauthorizedError('Invalid credentials');
   const jti = crypto.randomUUID();
