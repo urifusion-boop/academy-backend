@@ -17,6 +17,14 @@ services:
     depends_on:
       - academy-db
       - academy-minio
+      - academy-redis
+
+  academy-redis:
+    image: redis:alpine
+    container_name: academy-backend.redis
+    restart: always
+    networks:
+      - uritest-network
 
   academy-db:
     image: postgres:16-alpine
