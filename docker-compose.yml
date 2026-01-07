@@ -2,10 +2,7 @@ version: "3.9"
 
 services:
   academy-backend.api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: uriteam/urisvc:academybackendprod
+    image: uriteam/urisvc:academybackenddev
     container_name: academy-backend.api
     env_file:
       - .env
