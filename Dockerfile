@@ -36,4 +36,6 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-CMD ["node", "--experimental-specifier-resolution=node", "dist/src/server.js"]
+ENV NODE_OPTIONS="--experimental-specifier-resolution=node"
+
+CMD ["sh", "-c", "ls -R dist && node dist/src/server.js"]
