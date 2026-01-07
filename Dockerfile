@@ -38,4 +38,4 @@ ENV PORT=3000
 
 # ENV NODE_OPTIONS="--experimental-specifier-resolution=node"
 
-CMD ["node", "--experimental-specifier-resolution=node", "dist/src/server.js"]
+CMD ["node", "dist/src/server.js"]
