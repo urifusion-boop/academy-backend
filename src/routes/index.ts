@@ -10,6 +10,7 @@ import certificatesRoutes from './certificates.routes';
 import curriculumRoutes from './curriculum.routes';
 import filesRoutes from './files.routes';
 import healthRoutes from './health.routes';
+import paymentRoutes from './payments.routes';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/content', contentRoutes);
 router.use('/curriculum', curriculumRoutes);
 router.use('/certificates', certificatesRoutes);
 router.use('/files', filesRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;

@@ -1,10 +1,11 @@
 import { type RequestHandler } from 'express';
 import { verifyAccessToken } from './jwt';
 import { prisma } from '../lib/prisma';
+import { Role } from '@prisma/client';
 
 type AuthedUser = {
   id: string;
-  role: 'ADMIN' | 'STUDENT';
+  role: Role;
   email: string;
   name: string;
   initials?: string | null;
@@ -40,10 +41,15 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
   }
 };
 
-export function requireRole(role: 'ADMIN' | 'STUDENT'): RequestHandler {
+export function requireRole(role: Role | Role[]): RequestHandler {
   return (req, res, next) => {
     const user = res.locals.user as AuthedUser | undefined;
-    if (!user || user.role !== role) {
+    if (!user) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const allowed = Array.isArray(role) ? role.includes(user.role) : user.role === role;
+    if (!allowed) {
       res.status(403).json({ error: 'Forbidden' });
       return;
     }
