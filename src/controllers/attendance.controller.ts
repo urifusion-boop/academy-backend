@@ -40,21 +40,37 @@ const createSessionSchema = z.object({
   date: z.string().datetime(),
   cohortId: z.string(),
   topic: z.string(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)'),
+  startTime: z
+    .string()
+    .datetime()
+    .or(z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)')),
+  endTime: z
+    .string()
+    .datetime()
+    .or(z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:MM)')),
 });
 
 export const createSession: RequestHandler = async (req, res) => {
+  console.log('[createSession] Payload:', JSON.stringify(req.body, null, 2));
   const parsed = createSessionSchema.safeParse(req.body);
   if (!parsed.success) {
+    console.error(
+      '[createSession] Validation Errors:',
+      JSON.stringify(parsed.error.issues, null, 2),
+    );
     res.status(400).json({ error: 'ValidationError', issues: parsed.error.issues });
     return;
   }
 
-  // Helper to combine date string (ISO) with time string (HH:MM)
-  const combineDateTime = (dateStr: string, timeStr: string) => {
+  // Helper to handle both ISO strings and HH:MM format
+  const parseTime = (dateStr: string, timeInput: string) => {
+    // If it's already an ISO string (contains 'T'), parse directly
+    if (timeInput.includes('T')) {
+      return new Date(timeInput);
+    }
+    // Otherwise handle HH:MM format
     const d = new Date(dateStr);
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes] = timeInput.split(':').map(Number);
     d.setUTCHours(hours, minutes, 0, 0);
     return d;
   };
@@ -64,8 +80,8 @@ export const createSession: RequestHandler = async (req, res) => {
       date: new Date(parsed.data.date),
       cohortId: parsed.data.cohortId,
       topic: parsed.data.topic,
-      startTime: combineDateTime(parsed.data.date, parsed.data.startTime),
-      endTime: combineDateTime(parsed.data.date, parsed.data.endTime),
+      startTime: parseTime(parsed.data.date, parsed.data.startTime),
+      endTime: parseTime(parsed.data.date, parsed.data.endTime),
     },
   });
   res.status(201).json(s);
