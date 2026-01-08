@@ -1,7 +1,10 @@
 # Stage 1: Build the application
-FROM node:22-alpine as build
+FROM node:22-slim as build
 
 WORKDIR /app
+
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
@@ -19,10 +22,10 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 2: Production container
-FROM node:22-alpine as production
+FROM node:22-slim as production
 
-# Install OpenSSL 1.1 compatibility for Prisma
-RUN apk add --no-cache openssl1.1-compat
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -38,7 +41,5 @@ EXPOSE 3000
 # Configure the application
 ENV NODE_ENV=production
 ENV PORT=3000
-
-# ENV NODE_OPTIONS="--experimental-specifier-resolution=node"
 
 CMD ["node", "dist/src/server.js"]
