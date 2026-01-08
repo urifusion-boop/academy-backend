@@ -17,7 +17,6 @@
     "docker:push": "docker push uriteam/urisvc:academybackenddev"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.645.0",
     "@prisma/client": "^5.15.0",
     "bcrypt": "^5.1.1",
     "bullmq": "^5.7.18",
@@ -28,7 +27,6 @@
     "helmet": "^7.0.0",
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
-    "minio": "^8.0.3",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.8",
     "pino": "^9.4.0",

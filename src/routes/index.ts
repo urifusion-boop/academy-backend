@@ -8,7 +8,6 @@ import studentRoutes from './students.routes';
 import contentRoutes from './content.routes';
 import certificatesRoutes from './certificates.routes';
 import curriculumRoutes from './curriculum.routes';
-import filesRoutes from './files.routes';
 import healthRoutes from './health.routes';
 import paymentRoutes from './payments.routes';
 import adminRoutes from './admin.routes';
@@ -26,7 +25,6 @@ router.use('/cohorts', cohortRoutes);
 router.use('/content', contentRoutes);
 router.use('/curriculum', curriculumRoutes);
 router.use('/certificates', certificatesRoutes);
-router.use('/files', filesRoutes);
 router.use('/payments', paymentRoutes);
 
 export default router;

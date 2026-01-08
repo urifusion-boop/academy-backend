@@ -2,7 +2,6 @@ import { type RequestHandler } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { getPagination, listResponse } from '../lib/pagination';
-import { getPresignedGetUrl } from '../services/storage.service';
 import { createAssignmentSchema, gradeSubmissionSchema } from '../validators/assignments';
 
 const listQuerySchema = z.object({
@@ -134,8 +133,7 @@ export const getAssignment: RequestHandler = async (req, res) => {
 };
 
 const submissionCreateSchema = z.object({
-  contentURL: z.string().url().optional(),
-  fileRef: z.string().optional(),
+  contentURL: z.string().url(),
   cohortId: z.string().optional(),
 });
 
@@ -169,7 +167,6 @@ export const createSubmission: RequestHandler = async (req, res) => {
       studentId: student.id,
       status: 'PENDING',
       contentURL: parsed.data.contentURL,
-      fileRef: parsed.data.fileRef,
     },
   });
   res.status(201).json(sub);
@@ -310,7 +307,6 @@ export const listGrades: RequestHandler = async (req, res) => {
 
 export const getSubmissionFile: RequestHandler = async (req, res) => {
   const id = req.params.id;
-  console.log(`[getSubmissionFile] Requested ID: ${id}`);
   const sub = await prisma.submission.findUnique({ where: { id } });
   if (!sub) {
     res.status(404).json({ error: 'NotFound' });
@@ -320,12 +316,7 @@ export const getSubmissionFile: RequestHandler = async (req, res) => {
     res.json({ url: sub.contentURL });
     return;
   }
-  if (sub.fileRef) {
-    const url = await getPresignedGetUrl(sub.fileRef, 600);
-    res.json({ url });
-    return;
-  }
-  res.status(404).json({ error: 'NotFound' });
+  res.status(404).json({ error: 'NotFound', message: 'No URL available for this submission' });
 };
 
 export const gradeSubmission: RequestHandler = async (req, res) => {
