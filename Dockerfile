@@ -37,9 +37,12 @@ COPY --from=build /app/prisma ./prisma
 
 # Expose the ports the app runs on
 EXPOSE 3000
+EXPOSE 3443
 
 # Configure the application
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HTTP_PORT=3000
+ENV HTTPS_PORT=3443
 
 CMD ["node", "dist/src/server.js"]

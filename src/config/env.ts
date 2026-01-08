@@ -6,6 +6,8 @@ dotenv.config();
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().default('3000'),
+  HTTP_PORT: z.string().default('3000'),
+  HTTPS_PORT: z.string().default('3443'),
   DATABASE_URL: z.string().default('postgresql://user:pass@localhost:5432/db'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_ACCESS_SECRET: z.string().default('accessdevsecret'),
