@@ -310,6 +310,7 @@ export const listGrades: RequestHandler = async (req, res) => {
 
 export const getSubmissionFile: RequestHandler = async (req, res) => {
   const id = req.params.id;
+  console.log(`[getSubmissionFile] Requested ID: ${id}`);
   const sub = await prisma.submission.findUnique({ where: { id } });
   if (!sub) {
     res.status(404).json({ error: 'NotFound' });

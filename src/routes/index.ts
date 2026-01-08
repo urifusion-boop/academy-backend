@@ -11,9 +11,11 @@ import curriculumRoutes from './curriculum.routes';
 import filesRoutes from './files.routes';
 import healthRoutes from './health.routes';
 import paymentRoutes from './payments.routes';
+import adminRoutes from './admin.routes';
 
 const router = Router();
 
+router.use('/admin', adminRoutes);
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
