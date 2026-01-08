@@ -108,12 +108,15 @@ model Cohort {
 }
 
 model CurriculumItem {
-  id           String  @id @default(uuid())
-  week         Int
-  title        String
-  description  String
+  id              String         @id @default(uuid())
+  week            Int
+  title           String
+  description     String
   durationMinutes Int
-  orderIndex   Int
+  orderIndex      Int
+  topics          String[]
+  icon            String?
+  content         ContentAsset[]
 }
 
 model Assignment {
@@ -206,6 +209,8 @@ model ContentAsset {
   url        String
   cohortId   String?
   cohort     Cohort?  @relation(fields: [cohortId], references: [id])
+  curriculumItemId String?
+  curriculumItem   CurriculumItem? @relation(fields: [curriculumItemId], references: [id])
   publishedAt DateTime?
 }
 
