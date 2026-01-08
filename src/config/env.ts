@@ -17,7 +17,7 @@ const EnvSchema = z.object({
   PAYSTACK_SECRET_KEY: z.string().default('psk'),
   PAYSTACK_PUBLIC_KEY: z.string().default('ppk'),
   STRIPE_SECRET: z.string().optional(),
-  APP_URL: z.string().default('http://localhost:5174'),
+  APP_URL: z.string().default('https://academy.uricreative.com'),
   API_URL: z.string().default('http://localhost:3000'),
   CORS_ORIGIN: z.string().optional(),
   SUPABASE_DB_URL: z.string().optional(),
