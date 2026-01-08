@@ -23,9 +23,12 @@ async function start() {
     // HTTPS Server (Production only)
     if (env.NODE_ENV === 'production') {
       try {
+        const keyPath = process.env.SSL_KEY_PATH || '/certs/privkey.pem';
+        const certPath = process.env.SSL_CERT_PATH || '/certs/fullchain.pem';
+
         const sslOptions = {
-          key: fs.readFileSync('/certs/privkey.pem'),
-          cert: fs.readFileSync('/certs/fullchain.pem'),
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath),
         };
 
         https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
