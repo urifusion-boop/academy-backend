@@ -16,7 +16,7 @@ app.use(requestLogger);
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CORS_ORIGIN || env.APP_URL,
+    origin: true,
     credentials: true,
   }),
 );
