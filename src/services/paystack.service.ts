@@ -11,6 +11,9 @@ export async function initializeTransaction(
 ) {
   console.log(`[Paystack] Initializing transaction for ${email}, amount: ${amount}`);
   const start = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000); // 45s timeout
+
   try {
     const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
       method: 'POST',
@@ -24,7 +27,9 @@ export async function initializeTransaction(
         callback_url: callbackUrl,
         metadata,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     console.log(`[Paystack] Response status: ${response.status} (${Date.now() - start}ms)`);
 
@@ -41,6 +46,7 @@ export async function initializeTransaction(
 
     return data;
   } catch (error) {
+    clearTimeout(timeout);
     console.error(`[Paystack] Network or API error (${Date.now() - start}ms):`, error);
     throw error;
   }
