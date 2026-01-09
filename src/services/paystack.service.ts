@@ -9,31 +9,41 @@ export async function initializeTransaction(
   callbackUrl?: string,
   metadata?: Record<string, unknown>,
 ) {
-  const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email,
-      amount: amount * 100, // Paystack expects amount in kobo
-      callback_url: callbackUrl,
-      metadata,
-    }),
-  });
+  console.log(`[Paystack] Initializing transaction for ${email}, amount: ${amount}`);
+  const start = Date.now();
+  try {
+    const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        amount: amount * 100, // Paystack expects amount in kobo
+        callback_url: callbackUrl,
+        metadata,
+      }),
+    });
 
-  const data = (await response.json()) as {
-    status: boolean;
-    message: string;
-    data: { authorization_url: string; access_code: string; reference: string };
-  };
+    console.log(`[Paystack] Response status: ${response.status} (${Date.now() - start}ms)`);
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Paystack initialization failed');
+    const data = (await response.json()) as {
+      status: boolean;
+      message: string;
+      data: { authorization_url: string; access_code: string; reference: string };
+    };
+
+    if (!response.ok) {
+      console.error('[Paystack] Error:', data);
+      throw new Error(data.message || 'Paystack initialization failed');
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`[Paystack] Network or API error (${Date.now() - start}ms):`, error);
+    throw error;
   }
-
-  return data;
 }
 
 export async function verifyTransaction(reference: string) {
