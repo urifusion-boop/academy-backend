@@ -9,31 +9,47 @@ export async function initializeTransaction(
   callbackUrl?: string,
   metadata?: Record<string, unknown>,
 ) {
-  const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email,
-      amount: amount * 100, // Paystack expects amount in kobo
-      callback_url: callbackUrl,
-      metadata,
-    }),
-  });
+  console.log(`[Paystack] Initializing transaction for ${email}, amount: ${amount}`);
+  const start = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000); // 45s timeout
 
-  const data = (await response.json()) as {
-    status: boolean;
-    message: string;
-    data: { authorization_url: string; access_code: string; reference: string };
-  };
+  try {
+    const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        amount: amount * 100, // Paystack expects amount in kobo
+        callback_url: callbackUrl,
+        metadata,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Paystack initialization failed');
+    console.log(`[Paystack] Response status: ${response.status} (${Date.now() - start}ms)`);
+
+    const data = (await response.json()) as {
+      status: boolean;
+      message: string;
+      data: { authorization_url: string; access_code: string; reference: string };
+    };
+
+    if (!response.ok) {
+      console.error('[Paystack] Error:', data);
+      throw new Error(data.message || 'Paystack initialization failed');
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeout);
+    console.error(`[Paystack] Network or API error (${Date.now() - start}ms):`, error);
+    throw error;
   }
-
-  return data;
 }
 
 export async function verifyTransaction(reference: string) {

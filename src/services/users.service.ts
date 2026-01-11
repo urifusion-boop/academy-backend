@@ -13,14 +13,28 @@ export async function updateMeData(userId: string, data: { name?: string; initia
   return updated
 }
 
-export async function updatePasswordData(userId: string, currentPassword: string, newPassword: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user) throw new NotFoundError('User not found')
-  const ok = await bcrypt.compare(currentPassword, user.passwordHash)
-  if (!ok) throw new UnauthorizedError('Invalid credentials')
-  const hash = await bcrypt.hash(newPassword, 12)
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } })
-  return { ok: true }
+export async function updatePasswordData(
+  userId: string,
+  currentPassword: string | null | undefined,
+  newPassword: string,
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new NotFoundError('User not found');
+
+  if (currentPassword) {
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) throw new UnauthorizedError('Invalid credentials');
+  } else {
+    // If currentPassword is not provided, allow update ONLY if password is not set
+    // We use a specific placeholder 'NOT_SET' for users created via public payment flow
+    if (user.passwordHash !== 'NOT_SET') {
+      throw new UnauthorizedError('Current password is required');
+    }
+  }
+
+  const hash = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+  return { ok: true };
 }
 
 export async function updateNotificationsData(

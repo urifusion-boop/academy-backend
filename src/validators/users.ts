@@ -6,7 +6,7 @@ export const updateMeSchema = z.object({
 });
 
 export const updatePasswordSchema = z.object({
-  currentPassword: z.string(),
+  currentPassword: z.string().optional().nullable(),
   newPassword: z.string().min(8),
 });
 

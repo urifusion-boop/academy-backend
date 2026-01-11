@@ -47,6 +47,92 @@ export const markPaid: RequestHandler = asyncHandler(async (req, res) => {
 
 import { signAccessToken, signRefreshToken } from '../auth/jwt';
 
+export const initializePublicPayment: RequestHandler = asyncHandler(async (req, res) => {
+  console.log('Starting initializePublicPayment...');
+  const { email, name, phoneNumber, amount, plan, callbackUrl } = req.body as {
+    email?: string;
+    name?: string;
+    phoneNumber?: string;
+    amount?: number;
+    plan?: string;
+    callbackUrl?: string;
+  };
+
+  if (!email || !name) {
+    res.status(400).json({ error: 'Email and Name are required' });
+    return;
+  }
+
+  console.log('Finding user by email:', email);
+  let user = await prisma.user.findUnique({ where: { email }, include: { profile: true } });
+
+  if (!user) {
+    console.log('User not found, creating new user...');
+    // Create new user with placeholder password
+    user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        phoneNumber,
+        role: Role.APPLICANT,
+        passwordHash: 'NOT_SET',
+      },
+      include: { profile: true },
+    });
+
+    await prisma.notificationPref.create({
+      data: { userId: user.id, emailNews: false, emailAssignments: true, emailGrades: true },
+    });
+    console.log('New user created:', user.id);
+  } else {
+    console.log('User found:', user.id);
+  }
+
+  // Ensure profile exists
+  let profileId = user.profile?.id;
+  if (!profileId) {
+    console.log('Creating student profile...');
+    const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
+    const profile = await prisma.studentProfile.create({
+      data: { userId: user.id, studentIdCode, progress: 0 },
+    });
+    profileId = profile.id;
+    console.log('Student profile created:', profileId);
+  }
+
+  const amt = typeof amount === 'number' && amount > 0 ? amount : 30000;
+  console.log('Initializing Paystack transaction with amount:', amt);
+
+  const paystackData = await initializeTransaction(
+    email,
+    amt,
+    callbackUrl || `${env.APP_URL}/dashboard`,
+    {
+      plan: plan || 'full',
+      userId: user.id,
+    },
+  );
+  console.log('Paystack initialized, reference:', paystackData.data.reference);
+
+  await prisma.payment.create({
+    data: {
+      studentId: profileId,
+      amount: amt,
+      currency: 'NGN',
+      status: PaymentStatus.PENDING,
+      method: PaymentMethod.CARD,
+      provider: PaymentProvider.PAYSTACK,
+      reference: paystackData.data.reference,
+    },
+  });
+  console.log('Payment record created locally.');
+
+  res.json({
+    authorizationUrl: paystackData.data.authorization_url,
+    reference: paystackData.data.reference,
+  });
+});
+
 export const initiatePayment: RequestHandler = asyncHandler(async (req, res) => {
   const userId = res.locals.user?.id;
   console.log('Initiating payment for user:', userId);
@@ -165,11 +251,6 @@ export const verifyPayment: RequestHandler = asyncHandler(async (req, res) => {
     res.status(400).json({ error: 'Reference is required' });
     return;
   }
-  const userId = res.locals.user?.id;
-  if (!userId) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
 
   const record = await prisma.payment.findUnique({
     where: { reference },
@@ -179,9 +260,16 @@ export const verifyPayment: RequestHandler = asyncHandler(async (req, res) => {
     res.status(404).json({ error: 'Payment not found' });
     return;
   }
-  if (record.student.userId !== userId) {
-    res.status(403).json({ error: 'Forbidden' });
-    return;
+
+  let userId = res.locals.user?.id;
+  if (userId) {
+    if (record.student.userId !== userId) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+  } else {
+    // Public verification logic: assume user is the one associated with payment
+    userId = record.student.userId;
   }
 
   const verification = await verifyTransaction(reference);

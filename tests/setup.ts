@@ -18,7 +18,9 @@ process.env.APP_URL = process.env.APP_URL || 'http://localhost:5174';
 process.env.API_URL = process.env.API_URL || 'http://localhost:3000';
 process.env.CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5174';
 
-import app from '../src/app';
 import request from 'supertest';
 
-export const api = () => request(app);
+export const api = () => {
+  const app = require('../src/app').default;
+  return request(app);
+};

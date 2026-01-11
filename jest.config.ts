@@ -6,7 +6,10 @@ const config: Config = {
   roots: ['<rootDir>/tests'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: ['src/**/*.ts'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts']
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  moduleNameMapper: {
+    '^node-fetch$': '<rootDir>/tests/mocks/node-fetch.ts',
+  },
 }
 
 export default config
