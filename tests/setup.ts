@@ -21,6 +21,7 @@ process.env.CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5174';
 import request from 'supertest';
 
 export const api = () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const app = require('../src/app').default;
   return request(app);
 };

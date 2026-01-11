@@ -12,19 +12,6 @@ import { toUserResponse } from '../utils/transformers';
 
 export const getMe: RequestHandler = asyncHandler(async (req, res) => {
   const user = res.locals.user;
-  if (process.env.NODE_ENV === 'test') {
-    res.json({
-      ...toUserResponse(user),
-      profile: { id: 'sp1', userId: user.id, progress: 0, studentIdCode: 'STD-2025-001' },
-      notificationPref: {
-        userId: user.id,
-        emailNews: false,
-        emailAssignments: true,
-        emailGrades: true,
-      },
-    });
-    return;
-  }
   const { profile, prefs } = await getMeData(user.id);
   res.json({ ...toUserResponse(user), profile, notificationPref: prefs });
 });

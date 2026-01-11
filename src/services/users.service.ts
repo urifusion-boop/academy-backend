@@ -1,16 +1,19 @@
-import bcrypt from 'bcrypt'
-import { prisma } from '../lib/prisma'
-import { NotFoundError, UnauthorizedError } from '../utils/errors'
+import bcrypt from 'bcrypt';
+import { prisma } from '../lib/prisma';
+import { NotFoundError, UnauthorizedError } from '../utils/errors';
 
 export async function getMeData(userId: string) {
-  const profile = await prisma.studentProfile.findUnique({ where: { userId } })
-  const prefs = await prisma.notificationPref.findUnique({ where: { userId } })
-  return { profile, prefs }
+  const profile = await prisma.studentProfile.findUnique({
+    where: { userId },
+    include: { cohort: true },
+  });
+  const prefs = await prisma.notificationPref.findUnique({ where: { userId } });
+  return { profile, prefs };
 }
 
 export async function updateMeData(userId: string, data: { name?: string; initials?: string }) {
-  const updated = await prisma.user.update({ where: { id: userId }, data })
-  return updated
+  const updated = await prisma.user.update({ where: { id: userId }, data });
+  return updated;
 }
 
 export async function updatePasswordData(
@@ -39,7 +42,7 @@ export async function updatePasswordData(
 
 export async function updateNotificationsData(
   userId: string,
-  data: { emailNews?: boolean; emailAssignments?: boolean; emailGrades?: boolean }
+  data: { emailNews?: boolean; emailAssignments?: boolean; emailGrades?: boolean },
 ) {
   const updated = await prisma.notificationPref.upsert({
     where: { userId },
@@ -48,8 +51,8 @@ export async function updateNotificationsData(
       userId,
       emailNews: data.emailNews ?? false,
       emailAssignments: data.emailAssignments ?? true,
-      emailGrades: data.emailGrades ?? true
-    }
-  })
-  return updated
+      emailGrades: data.emailGrades ?? true,
+    },
+  });
+  return updated;
 }
