@@ -14,6 +14,7 @@ import {
   getSubmissionFile,
   gradeSubmission,
 } from '../controllers/assignments.controller';
+import { issueCapstoneCertificate } from '../controllers/assignments.controller';
 
 const router = Router();
 
@@ -39,5 +40,7 @@ router.patch('/submissions/:id', requireAuth, requireRole(Role.STUDENT), updateS
 router.post('/submissions/:id/grade', requireAuth, requireRole(Role.ADMIN), gradeSubmission);
 
 router.post('/:id/grade', requireAuth, requireRole(Role.ADMIN), gradeAssignment);
+
+router.post('/:id/issue-certificate', requireAuth, requireRole(Role.ADMIN), issueCapstoneCertificate);
 
 export default router;

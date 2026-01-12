@@ -2,7 +2,12 @@ import { type RequestHandler } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { getPagination, listResponse } from '../lib/pagination';
-import { createAssignmentSchema, gradeSubmissionSchema } from '../validators/assignments';
+import {
+  createAssignmentSchema,
+  gradeSubmissionSchema,
+  issueCertificateSchema,
+} from '../validators/assignments';
+import crypto from 'crypto';
 
 const listQuerySchema = z.object({
   cohortId: z.string().optional(),
@@ -18,6 +23,17 @@ export const createAssignment: RequestHandler = async (req, res) => {
   if (!parsed.success) {
     res.status(400).json({ error: 'ValidationError', issues: parsed.error.issues });
     return;
+  }
+  if (parsed.data.cohortId) {
+    const cohort = await prisma.cohort.findUnique({
+      where: { id: parsed.data.cohortId },
+    });
+    if (!cohort) {
+      res
+        .status(400)
+        .json({ error: 'ValidationError', message: 'Invalid cohortId: Cohort not found' });
+      return;
+    }
   }
   const assignment = await prisma.assignment.create({
     data: {
@@ -360,4 +376,44 @@ export const gradeSubmission: RequestHandler = async (req, res) => {
   }
 
   res.json({ submission: updatedSubmission, grade });
+};
+
+export const issueCapstoneCertificate: RequestHandler = async (req, res) => {
+  const assignmentId = req.params.id;
+  const parsed = issueCertificateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'ValidationError', issues: parsed.error.issues });
+    return;
+  }
+  const assignment = await prisma.assignment.findUnique({ where: { id: assignmentId } });
+  if (!assignment) {
+    res.status(404).json({ error: 'NotFound', message: 'Assignment not found' });
+    return;
+  }
+  const student = await prisma.studentProfile.findUnique({ where: { id: parsed.data.studentId } });
+  if (!student) {
+    res.status(404).json({ error: 'NotFound', message: 'Student not found' });
+    return;
+  }
+  const grade = await prisma.grade.findFirst({
+    where: { assignmentId, studentId: student.id },
+  });
+  if (!grade) {
+    res
+      .status(400)
+      .json({ error: 'ValidationError', message: 'Grade is required before issuing certificate' });
+    return;
+  }
+  const serial =
+    parsed.data.serialNumber || crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
+  const certificate = await prisma.certificate.create({
+    data: {
+      studentId: student.id,
+      fileURL: parsed.data.fileURL,
+      serialNumber: serial,
+      issuedAt: parsed.data.issuedAt ? new Date(parsed.data.issuedAt) : new Date(),
+      status: 'GENERATED',
+    },
+  });
+  res.status(201).json(certificate);
 };

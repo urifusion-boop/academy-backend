@@ -44,3 +44,10 @@ export const gradesQuerySchema = z.object({
   page: z.string().optional(),
   pageSize: z.string().optional(),
 });
+
+export const issueCertificateSchema = z.object({
+  studentId: z.string(),
+  fileURL: z.string().url(),
+  serialNumber: z.string().optional(),
+  issuedAt: z.string().datetime().optional(),
+});
