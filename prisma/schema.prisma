@@ -45,6 +45,7 @@ enum PaymentMethod {
 enum PaymentProvider {
   PAYSTACK
   STRIPE
+  SQUAD
 }
 
 enum ContentType {
@@ -249,4 +250,12 @@ model PasswordResetToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
   expiresAt DateTime
+}
+
+model DiscountCode {
+  id                 String   @id @default(uuid())
+  code               String   @unique
+  discountPercentage Int
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
 }

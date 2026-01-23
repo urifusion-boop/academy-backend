@@ -18,6 +18,8 @@ const EnvSchema = z.object({
   SMTP_PASS: z.string().default('pass'),
   PAYSTACK_SECRET_KEY: z.string().default('psk'),
   PAYSTACK_PUBLIC_KEY: z.string().default('ppk'),
+  SQUAD_SECRET_KEY: z.string().default('squad_sk'),
+  SQUAD_PUBLIC_KEY: z.string().default('squad_pk'),
   STRIPE_SECRET: z.string().optional(),
   APP_URL: z.string().default('https://academy.uricreative.com'),
   API_URL: z.string().default('http://localhost:3000'),
