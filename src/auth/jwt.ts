@@ -6,10 +6,11 @@ type JwtPayload = {
   sub: string;
   role: Role;
   jti?: string;
+  passwordSet?: boolean;
 };
 
 export function signAccessToken(payload: JwtPayload) {
-  return jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: '24h' });
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: '15m' });
 }
 
 export function signRefreshToken(payload: JwtPayload) {

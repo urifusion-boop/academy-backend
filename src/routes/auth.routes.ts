@@ -16,10 +16,15 @@ import {
   logout,
   requestPasswordReset,
   confirmPasswordReset,
+  registerAndPay,
+  setPassword,
 } from '../controllers/auth.controller';
+import { requireAuth } from '../auth/middleware';
 
 const router = Router();
 
+router.post('/register-and-pay', authLimiter, registerAndPay);
+router.post('/set-password', requireAuth, setPassword);
 router.post('/register', authLimiter, validateBody(registerSchema), register);
 router.post('/login', authLimiter, validateBody(loginSchema), login);
 router.post('/refresh', authLimiter, validateBody(refreshSchema), refresh);

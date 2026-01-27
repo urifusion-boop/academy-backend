@@ -25,12 +25,12 @@ export async function updatePasswordData(
   if (!user) throw new NotFoundError('User not found');
 
   if (currentPassword) {
+    if (!user.passwordHash) throw new UnauthorizedError('Password not set');
     const ok = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!ok) throw new UnauthorizedError('Invalid credentials');
   } else {
     // If currentPassword is not provided, allow update ONLY if password is not set
-    // We use a specific placeholder 'NOT_SET' for users created via public payment flow
-    if (user.passwordHash !== 'NOT_SET') {
+    if (user.passwordHash) {
       throw new UnauthorizedError('Current password is required');
     }
   }
