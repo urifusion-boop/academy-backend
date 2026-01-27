@@ -39,8 +39,8 @@ export async function registerUser(
   }
 
   const jti = crypto.randomUUID();
-  const accessToken = signAccessToken({ sub: user.id, role: user.role });
-  const refreshToken = signRefreshToken({ sub: user.id, role: user.role, jti });
+  const accessToken = signAccessToken({ sub: user.id, role: user.role, passwordSet: true });
+  const refreshToken = signRefreshToken({ sub: user.id, role: user.role, jti, passwordSet: true });
 
   return {
     user: toUserResponse(user),
@@ -51,14 +51,14 @@ export async function registerUser(
 
 export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new UnauthorizedError('Invalid credentials');
+  if (!user || !user.passwordHash) throw new UnauthorizedError('Invalid credentials');
 
   const ok = await bcrypt.compare(password, user.passwordHash);
 
   if (!ok) throw new UnauthorizedError('Invalid credentials');
   const jti = crypto.randomUUID();
-  const accessToken = signAccessToken({ sub: user.id, role: user.role });
-  const refreshToken = signRefreshToken({ sub: user.id, role: user.role, jti });
+  const accessToken = signAccessToken({ sub: user.id, role: user.role, passwordSet: true });
+  const refreshToken = signRefreshToken({ sub: user.id, role: user.role, jti, passwordSet: true });
   return { accessToken, refreshToken };
 }
 
