@@ -64,11 +64,18 @@ enum HelpTicketStatus {
   CLOSED
 }
 
+enum UserStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  SUSPENDED
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
-  passwordHash  String
+  passwordHash  String?
   role          Role
+  status        UserStatus @default(ACTIVE)
   name          String
   phoneNumber   String?
   initials      String?

@@ -293,10 +293,13 @@ export const squadWebhook: RequestHandler = asyncHandler(async (req, res) => {
             },
           });
 
-          // Upgrade User to STUDENT
+          // Upgrade User to STUDENT and Activate
           await tx.user.update({
             where: { id: payment.student.userId },
-            data: { role: Role.STUDENT },
+            data: {
+              role: Role.STUDENT,
+              status: 'ACTIVE',
+            } as any,
           });
         });
       }
@@ -346,7 +349,10 @@ export const verifyPayment: RequestHandler = asyncHandler(async (req, res) => {
       });
       await tx.user.update({
         where: { id: record.student.userId },
-        data: { role: Role.STUDENT },
+        data: {
+          role: Role.STUDENT,
+          status: 'ACTIVE',
+        } as any,
       });
     });
   } else if (status === 'failed' && record.status !== PaymentStatus.FAILED) {
@@ -365,8 +371,17 @@ export const verifyPayment: RequestHandler = asyncHandler(async (req, res) => {
     const freshUser = await prisma.user.findUnique({ where: { id: userId } });
     if (freshUser && freshUser.role === Role.STUDENT) {
       const jti = crypto.randomUUID();
-      const accessToken = signAccessToken({ sub: freshUser.id, role: freshUser.role });
-      const refreshToken = signRefreshToken({ sub: freshUser.id, role: freshUser.role, jti });
+      const accessToken = signAccessToken({
+        sub: freshUser.id,
+        role: freshUser.role,
+        passwordSet: !!freshUser.passwordHash,
+      });
+      const refreshToken = signRefreshToken({
+        sub: freshUser.id,
+        role: freshUser.role,
+        jti,
+        passwordSet: !!freshUser.passwordHash,
+      });
       tokens = { accessToken, refreshToken };
     }
   }
