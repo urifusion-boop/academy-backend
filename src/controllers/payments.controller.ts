@@ -48,7 +48,7 @@ export const markPaid: RequestHandler = asyncHandler(async (req, res) => {
 import { signAccessToken, signRefreshToken } from '../auth/jwt';
 
 export const initializePublicPayment: RequestHandler = asyncHandler(async (req, res) => {
-  console.log('Starting initializePublicPayment...');
+  // console.log('Starting initializePublicPayment...');
   const { email, name, phoneNumber, amount, plan, callbackUrl, discountCode } = req.body as {
     email?: string;
     name?: string;
@@ -64,11 +64,11 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
     return;
   }
 
-  console.log('Finding user by email:', email);
+  // console.log('Finding user by email:', email);
   let user = await prisma.user.findUnique({ where: { email }, include: { profile: true } });
 
   if (!user) {
-    console.log('User not found, creating new user...');
+    // console.log('User not found, creating new user...');
     // Create new user with placeholder password
     user = await prisma.user.create({
       data: {
@@ -84,7 +84,7 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
     await prisma.notificationPref.create({
       data: { userId: user.id, emailNews: false, emailAssignments: true, emailGrades: true },
     });
-    console.log('New user created:', user.id);
+    // console.log('New user created:', user.id);
   } else {
     console.log('User found:', user.id);
   }
@@ -92,7 +92,7 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
   // Ensure profile exists
   let profileId = user.profile?.id;
   if (!profileId) {
-    console.log('Creating student profile...');
+    // console.log('Creating student profile...');
     const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
     const profile = await prisma.studentProfile.create({
       data: { userId: user.id, studentIdCode, progress: 0 },
