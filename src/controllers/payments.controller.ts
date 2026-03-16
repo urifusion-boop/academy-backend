@@ -126,6 +126,35 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
     }
   }
 
+  // 100% discount — bypass payment gateway and enroll directly
+  if (finalAmount === 0) {
+    const reference = `free-${Date.now()}`;
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.create({
+        data: {
+          studentId: profileId,
+          amount: 0,
+          currency: 'NGN',
+          status: PaymentStatus.PAID,
+          method: PaymentMethod.CARD,
+          provider: PaymentProvider.SQUAD,
+          reference,
+        },
+      });
+      await tx.user.update({
+        where: { id: user.id },
+        data: { role: Role.STUDENT, status: 'ACTIVE' } as any,
+      });
+    });
+
+    const jti = crypto.randomUUID();
+    const accessToken = signAccessToken({ sub: user.id, role: Role.STUDENT, passwordSet: !!user.passwordHash });
+    const refreshToken = signRefreshToken({ sub: user.id, role: Role.STUDENT, jti, passwordSet: !!user.passwordHash });
+
+    res.json({ free: true, reference, tokens: { accessToken, refreshToken } });
+    return;
+  }
+
   console.log('Initializing Squad transaction with amount:', finalAmount);
 
   const squadData = await initializeTransaction(
@@ -202,6 +231,45 @@ export const initiatePayment: RequestHandler = asyncHandler(async (req, res) => 
     }
   }
 
+  // Ensure profile exists
+  let profileId = user.profile?.id;
+  if (!profileId) {
+    const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
+    const profile = await prisma.studentProfile.create({
+      data: { userId: user.id, studentIdCode, progress: 0 },
+    });
+    profileId = profile.id;
+  }
+
+  // 100% discount — bypass payment gateway and enroll directly
+  if (amount === 0) {
+    const reference = `free-${Date.now()}`;
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.create({
+        data: {
+          studentId: profileId!,
+          amount: 0,
+          currency: 'NGN',
+          status: PaymentStatus.PAID,
+          method: PaymentMethod.CARD,
+          provider: PaymentProvider.SQUAD,
+          reference,
+        },
+      });
+      await tx.user.update({
+        where: { id: user.id },
+        data: { role: Role.STUDENT, status: 'ACTIVE' } as any,
+      });
+    });
+
+    const jti = crypto.randomUUID();
+    const accessToken = signAccessToken({ sub: user.id, role: Role.STUDENT, passwordSet: !!user.passwordHash });
+    const refreshToken = signRefreshToken({ sub: user.id, role: Role.STUDENT, jti, passwordSet: !!user.passwordHash });
+
+    res.json({ free: true, reference, tokens: { accessToken, refreshToken } });
+    return;
+  }
+
   const squadData = await initializeTransaction(
     user.email,
     amount,
@@ -212,16 +280,6 @@ export const initiatePayment: RequestHandler = asyncHandler(async (req, res) => 
       discountCode: discountCode || null,
     },
   );
-
-  // Ensure profile exists
-  let profileId = user.profile?.id;
-  if (!profileId) {
-    const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
-    const profile = await prisma.studentProfile.create({
-      data: { userId: user.id, studentIdCode, progress: 0 },
-    });
-    profileId = profile.id;
-  }
 
   await prisma.payment.create({
     data: {
