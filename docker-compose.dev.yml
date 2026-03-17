@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  academy-backend.api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: uriteam/urisvc:academybackenddev
+    container_name: academy-backend.api
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PORT=80
+      - HTTP_PORT=80
+      - HTTPS_PORT=443
+      - SSL_CERT_PATH=
+      - SSL_KEY_PATH=
+    restart: always
+    ports:
+      - "8004:80"
+    networks:
+      - uritest-network
+    depends_on:
+      - academy-db
+      - academy-redis
+
+  academy-redis:
+    image: redis:alpine
+    container_name: academy-backend.redis
+    restart: always
+    networks:
+      - uritest-network
+
+  academy-db:
+    image: postgres:16-alpine
+    container_name: academy-backend.db
+    environment:
+      POSTGRES_USER: uri
+      POSTGRES_PASSWORD: uri
+      POSTGRES_DB: uri
+    restart: always
+    ports:
+      - "5433:5432"
+    networks:
+      - uritest-network
+    volumes:
+      - academy_postgres_data:/var/lib/postgresql/data
+
+networks:
+  uritest-network:
+    external: true
+
+volumes:
+  academy_postgres_data:
