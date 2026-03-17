@@ -264,6 +264,7 @@ async function main() {
   const discountCodes = [
     { code: 'TECHPULSE26', discountPercentage: 20 },
     { code: 'LASUTECH', discountPercentage: 20 },
+    { code: 'SALESACADEMY100', discountPercentage: 100 },
   ];
 
   for (const dc of discountCodes) {

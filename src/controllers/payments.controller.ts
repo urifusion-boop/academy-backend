@@ -48,7 +48,7 @@ export const markPaid: RequestHandler = asyncHandler(async (req, res) => {
 import { signAccessToken, signRefreshToken } from '../auth/jwt';
 
 export const initializePublicPayment: RequestHandler = asyncHandler(async (req, res) => {
-  console.log('Starting initializePublicPayment...');
+  // console.log('Starting initializePublicPayment...');
   const { email, name, phoneNumber, amount, plan, callbackUrl, discountCode } = req.body as {
     email?: string;
     name?: string;
@@ -64,11 +64,11 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
     return;
   }
 
-  console.log('Finding user by email:', email);
+  // console.log('Finding user by email:', email);
   let user = await prisma.user.findUnique({ where: { email }, include: { profile: true } });
 
   if (!user) {
-    console.log('User not found, creating new user...');
+    // console.log('User not found, creating new user...');
     // Create new user with placeholder password
     user = await prisma.user.create({
       data: {
@@ -84,7 +84,7 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
     await prisma.notificationPref.create({
       data: { userId: user.id, emailNews: false, emailAssignments: true, emailGrades: true },
     });
-    console.log('New user created:', user.id);
+    // console.log('New user created:', user.id);
   } else {
     console.log('User found:', user.id);
   }
@@ -92,7 +92,7 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
   // Ensure profile exists
   let profileId = user.profile?.id;
   if (!profileId) {
-    console.log('Creating student profile...');
+    // console.log('Creating student profile...');
     const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
     const profile = await prisma.studentProfile.create({
       data: { userId: user.id, studentIdCode, progress: 0 },
@@ -124,6 +124,35 @@ export const initializePublicPayment: RequestHandler = asyncHandler(async (req, 
       res.status(400).json({ error: 'Invalid or expired discount code' });
       return;
     }
+  }
+
+  // 100% discount — bypass payment gateway and enroll directly
+  if (finalAmount === 0) {
+    const reference = `free-${Date.now()}`;
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.create({
+        data: {
+          studentId: profileId,
+          amount: 0,
+          currency: 'NGN',
+          status: PaymentStatus.PAID,
+          method: PaymentMethod.CARD,
+          provider: PaymentProvider.SQUAD,
+          reference,
+        },
+      });
+      await tx.user.update({
+        where: { id: user.id },
+        data: { role: Role.STUDENT, status: 'ACTIVE' } as any,
+      });
+    });
+
+    const jti = crypto.randomUUID();
+    const accessToken = signAccessToken({ sub: user.id, role: Role.STUDENT, passwordSet: !!user.passwordHash });
+    const refreshToken = signRefreshToken({ sub: user.id, role: Role.STUDENT, jti, passwordSet: !!user.passwordHash });
+
+    res.json({ free: true, reference, tokens: { accessToken, refreshToken } });
+    return;
   }
 
   console.log('Initializing Squad transaction with amount:', finalAmount);
@@ -202,6 +231,45 @@ export const initiatePayment: RequestHandler = asyncHandler(async (req, res) => 
     }
   }
 
+  // Ensure profile exists
+  let profileId = user.profile?.id;
+  if (!profileId) {
+    const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
+    const profile = await prisma.studentProfile.create({
+      data: { userId: user.id, studentIdCode, progress: 0 },
+    });
+    profileId = profile.id;
+  }
+
+  // 100% discount — bypass payment gateway and enroll directly
+  if (amount === 0) {
+    const reference = `free-${Date.now()}`;
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.create({
+        data: {
+          studentId: profileId!,
+          amount: 0,
+          currency: 'NGN',
+          status: PaymentStatus.PAID,
+          method: PaymentMethod.CARD,
+          provider: PaymentProvider.SQUAD,
+          reference,
+        },
+      });
+      await tx.user.update({
+        where: { id: user.id },
+        data: { role: Role.STUDENT, status: 'ACTIVE' } as any,
+      });
+    });
+
+    const jti = crypto.randomUUID();
+    const accessToken = signAccessToken({ sub: user.id, role: Role.STUDENT, passwordSet: !!user.passwordHash });
+    const refreshToken = signRefreshToken({ sub: user.id, role: Role.STUDENT, jti, passwordSet: !!user.passwordHash });
+
+    res.json({ free: true, reference, tokens: { accessToken, refreshToken } });
+    return;
+  }
+
   const squadData = await initializeTransaction(
     user.email,
     amount,
@@ -212,16 +280,6 @@ export const initiatePayment: RequestHandler = asyncHandler(async (req, res) => 
       discountCode: discountCode || null,
     },
   );
-
-  // Ensure profile exists
-  let profileId = user.profile?.id;
-  if (!profileId) {
-    const studentIdCode = `STD-${crypto.randomInt(100000, 999999)}`;
-    const profile = await prisma.studentProfile.create({
-      data: { userId: user.id, studentIdCode, progress: 0 },
-    });
-    profileId = profile.id;
-  }
 
   await prisma.payment.create({
     data: {
@@ -299,7 +357,7 @@ export const squadWebhook: RequestHandler = asyncHandler(async (req, res) => {
             data: {
               role: Role.STUDENT,
               status: 'ACTIVE',
-            },
+            } as any,
           });
         });
       }
@@ -352,7 +410,7 @@ export const verifyPayment: RequestHandler = asyncHandler(async (req, res) => {
         data: {
           role: Role.STUDENT,
           status: 'ACTIVE',
-        },
+        } as any,
       });
     });
   } else if (status === 'failed' && record.status !== PaymentStatus.FAILED) {
