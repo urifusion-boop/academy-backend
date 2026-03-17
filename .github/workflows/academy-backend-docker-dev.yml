@@ -24,23 +24,16 @@ jobs:
           npm run build --if-present
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v1
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            uriteam/urisvc:academybackenddev-${{ github.sha }}
-            uriteam/urisvc:academybackenddev
+        run: |
+          docker build --no-cache -t uriteam/urisvc:academybackenddev-${{ github.sha }} -t uriteam/urisvc:academybackenddev .
+          docker push uriteam/urisvc:academybackenddev-${{ github.sha }}
+          docker push uriteam/urisvc:academybackenddev
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,45 +42,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy docker-compose.yml to VM
-        uses: appleboy/scp-action@master
+      - name: Copy docker-compose.dev.yml to VM
+        uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VM_IP }}
-          username: urifusion
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./docker-compose.yml"
-          target: "/tmp/"
+          host: ${{ secrets.VM_IP_DEV }}
+          username: uridev
+          key: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+          source: "./docker-compose.dev.yml"
+          target: "~/academy-backend/"
           strip_components: 0
 
       - name: SSH into VM and Deploy
         uses: appleboy/ssh-action@v0.1.6
         with:
-          host: ${{ secrets.VM_IP }}
-          username: urifusion
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VM_IP_DEV }}
+          username: uridev
+          key: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
           script: |
-            sudo su - uritest -c "
-            if [ ! -d /home/uritest/academy-backend ]; then
-              mkdir -p /home/uritest/academy-backend;
+            if [ ! -d ~/academy-backend ]; then
+              mkdir -p ~/academy-backend;
             fi
-            cd /home/uritest/academy-backend
-            "
-            sudo cp /tmp/docker-compose.yml /home/uritest/academy-backend/docker-compose.yml
-            sudo chown uritest:uritest /home/uritest/academy-backend/docker-compose.yml
-            sudo su - uritest -c "
-            cd /home/uritest/academy-backend
+            cd ~/academy-backend
             echo '${{ secrets.DOCKER_PASSWORD }}' | docker login -u '${{ secrets.DOCKER_USERNAME }}' --password-stdin
-            
-            # Stop and remove the specific container to ensure clean restart
-            docker-compose stop academy-backend.api
-            docker-compose rm -f academy-backend.api
+            docker-compose -f docker-compose.dev.yml down
 
             # Remove old image to force pull of new one
             docker rmi uriteam/urisvc:academybackenddev || true
 
-            docker-compose pull
-            docker-compose up -d
+            docker-compose -f docker-compose.dev.yml pull
+            docker-compose -f docker-compose.dev.yml up -d
 
             # Cleanup redundant images
             docker image prune -f
-            "
