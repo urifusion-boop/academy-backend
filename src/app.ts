@@ -11,6 +11,9 @@ import { openapi } from './docs/openapi';
 
 const app = express();
 
+// Trust proxy - required for rate limiting behind nginx
+app.set('trust proxy', true);
+
 app.use(attachRequestId);
 app.use(requestLogger);
 app.use(helmet());

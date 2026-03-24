@@ -1,4 +1,4 @@
-name: Build and Deploy Academy Backend to Azure VM (PROD)
+name: Build and Deploy Academy Backend to Azure VM (DEV)
 
 on:
   push:
@@ -55,8 +55,8 @@ jobs:
           host: ${{ secrets.VM_IP }}
           username: urifusion
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./docker-compose.yml"
-          target: "/tmp/"
+          source: './docker-compose.yml'
+          target: '/tmp/'
           strip_components: 0
 
       - name: SSH into VM and Deploy
@@ -66,18 +66,17 @@ jobs:
           username: urifusion
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo su - uriprod -c "
-            if [ ! -d /home/uriprod/academy-backend ]; then
-              mkdir -p /home/uriprod/academy-backend;
+            sudo su - uritest -c "
+            if [ ! -d /home/uritest/academy-backend ]; then
+              mkdir -p /home/uritest/academy-backend;
             fi
-            cd /home/uriprod/academy-backend
+            cd /home/uritest/academy-backend
             "
-            sudo cp /tmp/docker-compose.prod.yml /home/uriprod/academy-backend/docker-compose.yml
-            sudo chown uriprod:uriprod /home/uriprod/academy-backend/docker-compose.yml
-            sudo su - uriprod -c "
-            cd /home/uriprod/academy-backend
+            sudo cp /tmp/docker-compose.yml /home/uritest/academy-backend/docker-compose.yml
+            sudo chown uritest:uritest /home/uritest/academy-backend/docker-compose.yml
+            sudo su - uritest -c "
+            cd /home/uritest/academy-backend
             echo '${{ secrets.DOCKER_PASSWORD }}' | docker login -u '${{ secrets.DOCKER_USERNAME }}' --password-stdin
-
             # Stop and remove the specific container to ensure clean restart
             docker-compose stop academy-backend.api
             docker-compose rm -f academy-backend.api
