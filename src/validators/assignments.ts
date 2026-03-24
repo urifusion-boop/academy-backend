@@ -8,6 +8,14 @@ export const createAssignmentSchema = z.object({
   cohortId: z.string().optional(),
 });
 
+export const updateAssignmentSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  dueAt: z.string().datetime().optional(),
+  maxScore: z.number().int().positive().optional(),
+  cohortId: z.string().nullable().optional(),
+});
+
 export const listQuerySchema = z.object({
   cohortId: z.string().optional(),
   q: z.string().optional(),

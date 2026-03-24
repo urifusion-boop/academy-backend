@@ -5,6 +5,8 @@ import {
   createAssignment,
   listAssignments,
   getAssignment,
+  updateAssignment,
+  deleteAssignment,
   createSubmission,
   listSubmissions,
   getSubmission,
@@ -33,6 +35,8 @@ router.get(
 );
 
 router.get('/:id', requireAuth, requireRole([Role.STUDENT, Role.ADMIN]), getAssignment);
+router.patch('/:id', requireAuth, requireRole(Role.ADMIN), updateAssignment);
+router.delete('/:id', requireAuth, requireRole(Role.ADMIN), deleteAssignment);
 
 router.post('/:id/submissions', requireAuth, requireRole(Role.STUDENT), createSubmission);
 
@@ -41,6 +45,11 @@ router.post('/submissions/:id/grade', requireAuth, requireRole(Role.ADMIN), grad
 
 router.post('/:id/grade', requireAuth, requireRole(Role.ADMIN), gradeAssignment);
 
-router.post('/:id/issue-certificate', requireAuth, requireRole(Role.ADMIN), issueCapstoneCertificate);
+router.post(
+  '/:id/issue-certificate',
+  requireAuth,
+  requireRole(Role.ADMIN),
+  issueCapstoneCertificate,
+);
 
 export default router;

@@ -6,6 +6,7 @@ import {
   createAssignmentSchema,
   gradeSubmissionSchema,
   issueCertificateSchema,
+  updateAssignmentSchema,
 } from '../validators/assignments';
 import crypto from 'crypto';
 
@@ -146,6 +147,61 @@ export const getAssignment: RequestHandler = async (req, res) => {
     return;
   }
   res.json(item);
+};
+
+export const updateAssignment: RequestHandler = async (req, res) => {
+  const id = req.params.id;
+  const parsed = updateAssignmentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'ValidationError', issues: parsed.error.issues });
+    return;
+  }
+  const existing = await prisma.assignment.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: 'NotFound', message: 'Assignment not found' });
+    return;
+  }
+  if (parsed.data.cohortId) {
+    const cohort = await prisma.cohort.findUnique({ where: { id: parsed.data.cohortId } });
+    if (!cohort) {
+      res
+        .status(400)
+        .json({ error: 'ValidationError', message: 'Invalid cohortId: Cohort not found' });
+      return;
+    }
+  }
+  const updated = await prisma.assignment.update({
+    where: { id },
+    data: {
+      title: parsed.data.title,
+      description: parsed.data.description,
+      dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : undefined,
+      maxScore: parsed.data.maxScore,
+      cohortId: parsed.data.cohortId,
+    },
+  });
+  res.json(updated);
+};
+
+export const deleteAssignment: RequestHandler = async (req, res) => {
+  const id = req.params.id;
+  const assignment = await prisma.assignment.findUnique({
+    where: { id },
+    include: { _count: { select: { submissions: true } } },
+  });
+  if (!assignment) {
+    res.status(404).json({ error: 'NotFound', message: 'Assignment not found' });
+    return;
+  }
+  if (assignment._count.submissions > 0) {
+    res.status(400).json({
+      error: 'ConflictError',
+      message: `Cannot delete assignment with ${assignment._count.submissions} submission(s). Remove submissions first.`,
+    });
+    return;
+  }
+  await prisma.assignment.delete({ where: { id } });
+  res.status(204).send();
 };
 
 const submissionCreateSchema = z.object({
