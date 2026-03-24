@@ -111,3 +111,35 @@ export const updateCohort: RequestHandler = asyncHandler(async (req, res) => {
   });
   res.json(updated);
 });
+
+export const deactivateCohort: RequestHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const existing = await prisma.cohort.findUnique({ where: { id } });
+  if (!existing) {
+    throw new NotFoundError('Cohort not found');
+  }
+  const updated = await prisma.cohort.update({
+    where: { id },
+    data: { status: 'INACTIVE' },
+  });
+  res.json(updated);
+});
+
+export const deleteCohort: RequestHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const cohort = await prisma.cohort.findUnique({
+    where: { id },
+    include: { _count: { select: { students: true } } },
+  });
+  if (!cohort) {
+    throw new NotFoundError('Cohort not found');
+  }
+  if (cohort._count.students > 0) {
+    res.status(400).json({
+      error: `Cannot delete cohort with ${cohort._count.students} enrolled student(s). Deactivate it instead.`,
+    });
+    return;
+  }
+  await prisma.cohort.delete({ where: { id } });
+  res.status(204).send();
+});

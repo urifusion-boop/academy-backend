@@ -1,0 +1,1 @@
+ALTER TYPE "CohortStatus" ADD VALUE 'INACTIVE';
