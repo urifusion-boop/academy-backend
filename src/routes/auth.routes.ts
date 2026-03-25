@@ -8,6 +8,8 @@ import {
   logoutSchema,
   resetRequestSchema,
   resetConfirmSchema,
+  sendOtpSchema,
+  verifyOtpSchema,
 } from '../validators/auth';
 import {
   register,
@@ -18,6 +20,8 @@ import {
   confirmPasswordReset,
   registerAndPay,
   setPassword,
+  sendVerificationOtp,
+  verifyEmailOtp,
 } from '../controllers/auth.controller';
 import { requireAuth } from '../auth/middleware';
 
@@ -41,5 +45,7 @@ router.post(
   validateBody(resetConfirmSchema),
   confirmPasswordReset,
 );
+router.post('/email/send-otp', authLimiter, validateBody(sendOtpSchema), sendVerificationOtp);
+router.post('/email/verify-otp', authLimiter, validateBody(verifyOtpSchema), verifyEmailOtp);
 
 export default router;

@@ -86,7 +86,9 @@ model User {
   notifications NotificationPref?
   auditLogs     AuditLog[]
   helpTickets   HelpTicket[]
-  passwordResetToken PasswordResetToken?
+  passwordResetToken  PasswordResetToken?
+  emailVerified       Boolean  @default(false)
+  emailVerificationOtp EmailVerificationOtp?
 }
 
 model StudentProfile {
@@ -257,6 +259,13 @@ model PasswordResetToken {
   userId    String   @id
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
+  expiresAt DateTime
+}
+
+model EmailVerificationOtp {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otp       String
   expiresAt DateTime
 }
 

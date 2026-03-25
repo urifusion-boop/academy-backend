@@ -25,6 +25,8 @@ const EnvSchema = z.object({
   API_URL: z.string().default('http://localhost:3000'),
   CORS_ORIGIN: z.string().optional(),
   SUPABASE_DB_URL: z.string().optional(),
+  RESEND_API_KEY: z.string().default('re_placeholder'),
+  FROM_EMAIL: z.string().default('noreply@uricreative.com'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

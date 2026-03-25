@@ -23,3 +23,5 @@ export const logoutSchema = z.object({
 
 export const resetRequestSchema = z.object({ email: z.string().email() });
 export const resetConfirmSchema = z.object({ token: z.string(), newPassword: z.string().min(8) });
+export const sendOtpSchema = z.object({ email: z.string().email() });
+export const verifyOtpSchema = z.object({ email: z.string().email(), otp: z.string().length(6) });

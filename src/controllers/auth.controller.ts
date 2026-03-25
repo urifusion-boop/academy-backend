@@ -6,6 +6,7 @@ import { verifyRefreshToken } from '../auth/jwt';
 import { revokeRefreshJti } from '../auth/tokenStore';
 import { registerUser, loginUser, refreshTokens } from '../services/auth.service';
 import { env } from '../config/env';
+import { sendPasswordResetEmail, sendEmailVerificationOtp } from '../services/email.service';
 import { initializeTransaction } from '../services/squad.service';
 import { PaymentStatus, PaymentMethod, PaymentProvider } from '@prisma/client';
 import {
@@ -15,6 +16,8 @@ import {
   logoutSchema,
   resetRequestSchema,
   resetConfirmSchema,
+  sendOtpSchema,
+  verifyOtpSchema,
 } from '../validators/auth';
 import { ValidationError } from '../utils/errors';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -85,6 +88,8 @@ export const requestPasswordReset: RequestHandler = asyncHandler(async (req, res
     update: { token, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
     create: { userId: user.id, token, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
   });
+  const resetLink = `${env.APP_URL}/reset-password?token=${token}`;
+  await sendPasswordResetEmail(user.email, user.name, resetLink);
   res.status(200).json({ message: 'Password reset email sent' });
 });
 
@@ -232,4 +237,52 @@ export const confirmPasswordReset: RequestHandler = asyncHandler(async (req, res
   await prisma.user.update({ where: { id: record.userId }, data: { passwordHash: hash } });
   await prisma.passwordResetToken.delete({ where: { userId: record.userId } });
   res.status(200).json({ message: 'Password successfully reset' });
+});
+
+export const sendVerificationOtp: RequestHandler = asyncHandler(async (req, res) => {
+  const parsed = sendOtpSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new ValidationError(parsed.error.issues);
+  }
+  const { email } = parsed.data;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    res.status(200).json({ message: 'If that email exists, a verification code was sent' });
+    return;
+  }
+  if (user.emailVerified) {
+    res.status(400).json({ error: 'Email is already verified' });
+    return;
+  }
+  const otp = String(crypto.randomInt(100000, 999999));
+  await prisma.emailVerificationOtp.upsert({
+    where: { userId: user.id },
+    update: { otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+    create: { userId: user.id, otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+  });
+  await sendEmailVerificationOtp(user.email, user.name, otp);
+  res.status(200).json({ message: 'If that email exists, a verification code was sent' });
+});
+
+export const verifyEmailOtp: RequestHandler = asyncHandler(async (req, res) => {
+  const parsed = verifyOtpSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new ValidationError(parsed.error.issues);
+  }
+  const { email, otp } = parsed.data;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    res.status(400).json({ error: 'Invalid or expired code' });
+    return;
+  }
+  const record = await prisma.emailVerificationOtp.findFirst({
+    where: { userId: user.id, otp, expiresAt: { gt: new Date() } },
+  });
+  if (!record) {
+    res.status(400).json({ error: 'Invalid or expired code' });
+    return;
+  }
+  await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+  await prisma.emailVerificationOtp.delete({ where: { userId: user.id } });
+  res.status(200).json({ message: 'Email verified successfully' });
 });

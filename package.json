@@ -31,6 +31,7 @@
     "nodemailer": "^6.9.8",
     "pino": "^9.4.0",
     "pino-http": "^10.1.0",
+    "resend": "^6.9.4",
     "stripe": "^14.0.0",
     "swagger-ui-express": "^5.0.0",
     "zod": "^3.23.8"
