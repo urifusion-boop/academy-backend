@@ -205,8 +205,11 @@ export const deleteAssignment: RequestHandler = async (req, res) => {
 };
 
 const submissionCreateSchema = z.object({
-  contentURL: z.string().url(),
+  contentURL: z.string().url().optional(),
   cohortId: z.string().optional(),
+}).refine(data => !!data.contentURL, {
+  message: 'contentURL (a link or uploaded file URL) is required',
+  path: ['contentURL'],
 });
 
 export const createSubmission: RequestHandler = async (req, res) => {

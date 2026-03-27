@@ -27,6 +27,8 @@ const EnvSchema = z.object({
   SUPABASE_DB_URL: z.string().optional(),
   RESEND_API_KEY: z.string().default('re_placeholder'),
   FROM_EMAIL: z.string().default('noreply@uricreative.com'),
+  SUPABASE_URL: z.string().default('https://placeholder.supabase.co'),
+  SUPABASE_SECRET_KEY: z.string().default('sb_secret_placeholder'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
