@@ -24,8 +24,8 @@ RUN npm run build
 # Stage 2: Production container
 FROM node:22-slim as production
 
-# Install OpenSSL for Prisma
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL for Prisma, curl to fetch the RDS CA bundle
+RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -34,6 +34,9 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
+
+RUN curl -fsSL -o /app/global-bundle.pem \
+    https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
 # Expose the ports the app runs on
 EXPOSE 3000
