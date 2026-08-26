@@ -39,6 +39,9 @@ COPY --from=build /app/prisma ./prisma
 EXPOSE 3000
 EXPOSE 3443
 
+RUN curl -fsSL -o /app/global-bundle.pem \
+    https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
 # Configure the application
 ENV NODE_ENV=production
 ENV PORT=3000
