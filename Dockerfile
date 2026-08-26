@@ -24,8 +24,8 @@ RUN npm run build
 # Stage 2: Production container
 FROM node:22-slim as production
 
-# Install OpenSSL for Prisma
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL for Prisma, curl for the global-bundle.pem download below
+RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
